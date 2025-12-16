@@ -1,0 +1,15 @@
+# AVR build
+*.elf
+*.hex
+*.map
+*.o
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.log
