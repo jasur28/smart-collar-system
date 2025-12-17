@@ -35,7 +35,11 @@ CFLAGS += -Wall -Wextra -Wshadow -Wundef
 CFLAGS += -Os
 CFLAGS += -mmcu=$(MCU)
 CFLAGS += -DF_CPU=$(F_CPU)
-CFLAGS += -ffunction-sections -fdata-sections
+CFLAGS += -ffunction-sections -fdata-sections \
+		-Isrc \
+        -Isrc/drivers \
+        -Isrc/drivers/sensors \
+        -Isrc/app
 
 LDFLAGS = -mmcu=$(MCU)
 LDFLAGS += -Wl,--gc-sections
