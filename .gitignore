@@ -1,8 +1,14 @@
-# AVR build
+# AVR build artifacts
 *.elf
 *.hex
-*.map
 *.o
+*.map
+
+# Firmware build dir (если используется)
+firmware/*.elf
+firmware/*.hex
+firmware/src/*.o
+
 
 # VS Code
 .vscode/
