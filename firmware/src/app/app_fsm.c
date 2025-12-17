@@ -3,9 +3,10 @@
 #include "drivers/sensors/ds18b20.h"
 #include "drivers/sensors/mpu6050.h"
 #include "drivers/comm/uart.h"
+#include "drivers/power/sleep.h"
 
-#include <util/delay.h>
 #include <stdint.h>
+#include <avr/interrupt.h>
 
 /* ===== FSM internal state ===== */
 
@@ -30,6 +31,7 @@ void app_fsm_step(void) {
         /* Initialize application-level modules */
         ds18b20_init();
         mpu6050_init();
+        sleep_init();     // initialize watchdog sleep
 
         current_state = APP_STATE_READ_SENSORS;
         break;
@@ -44,6 +46,7 @@ void app_fsm_step(void) {
 
     case APP_STATE_SEND_UART:
         /* Send data over UART */
+        cli();
         uart_print("T=");
         uart_print_int(temp_raw / 16);
         uart_print("C ");
@@ -57,12 +60,16 @@ void app_fsm_step(void) {
 
         uart_print("\r\n");
 
+        /* Wait until UART transmission is fully completed */
+        uart_flush();
+        
+        sei();
         current_state = APP_STATE_SLEEP;
         break;
 
     case APP_STATE_SLEEP:
-        /* Temporary blocking delay (will be replaced by sleep + watchdog) */
-        _delay_ms(2000);
+        /* Enter low power sleep, wakeup by watchdog */
+        sleep_enter();
 
         current_state = APP_STATE_READ_SENSORS;
         break;

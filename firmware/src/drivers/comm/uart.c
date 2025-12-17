@@ -46,3 +46,12 @@ void uart_print_int(int16_t value) {
         uart_tx(buf[i]);
     }
 }
+
+void uart_flush(void) {
+    /* Wait for transmission of all data */
+    while (!(UCSR0A & (1 << TXC0))) {
+        /* wait */
+    }
+    /* Clear TXC flag by writing 1 */
+    UCSR0A |= (1 << TXC0);
+}

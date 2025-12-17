@@ -21,3 +21,8 @@ void uart_print(const char *s);
  * @brief Send signed 16-bit integer as decimal string
  */
 void uart_print_int(int16_t value);
+
+/**
+ * @brief Wait until all UART data is transmitted
+ */
+void uart_flush(void);
