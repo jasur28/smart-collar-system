@@ -3,7 +3,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdint.h>
-
+#include "drivers/sensors/ds18b20.h"
 /* ================= UART (USB-TTL) ================= */
 
 void uart_init(void) {
@@ -85,98 +85,7 @@ void mpu_init(void) {
     i2c_stop();
 }
 
-/* ================= DS18B20 (OneWire) ================= */
 
-#define OW_DDR  DDRD
-#define OW_PORT PORTD
-#define OW_PIN  PIND
-#define OW_BIT  PD2
-
-void ow_low(void) {
-    OW_DDR |= (1<<OW_BIT);
-    OW_PORT &= ~(1<<OW_BIT);
-}
-
-void ow_release(void) {
-    OW_DDR &= ~(1<<OW_BIT);
-}
-
-uint8_t ow_reset(void) {
-    ow_low();
-    _delay_us(480);
-    ow_release();
-    _delay_us(70);
-    uint8_t ok = !(OW_PIN & (1<<OW_BIT));
-    _delay_us(410);
-    return ok;
-}
-
-void ow_write_bit(uint8_t b) {
-    ow_low();
-    if (b) {
-        _delay_us(6);    // write '1'
-        ow_release();
-        _delay_us(64);
-    } else {
-        _delay_us(60);   // write '0'
-        ow_release();
-        _delay_us(10);
-    }
-}
-
-
-uint8_t ow_read_bit(void) {
-    uint8_t bit;
-
-    ow_low();            // master pulls low
-    _delay_us(3);        // ≥1µs
-    ow_release();        // release bus
-    _delay_us(12);       // ❗ ЖДЁМ, пока датчик выставит бит
-
-    bit = (OW_PIN & (1 << OW_BIT)) ? 1 : 0;
-
-    _delay_us(50);       // конец тайм-слота (~60µs total)
-    return bit;
-}
-
-
-void ow_write_byte(uint8_t b) {
-    for (uint8_t i=0;i<8;i++) {
-        ow_write_bit(b & 1);
-        b >>= 1;
-    }
-}
-
-uint8_t ow_read_byte(void) {
-    uint8_t v = 0;
-    for (uint8_t i = 0; i < 8; i++) {
-        if (ow_read_bit()) {
-            v |= (1 << i);   // LSB → MSB
-        }
-    }
-    return v;
-}
-
-
-int16_t ds18b20_read(void) {
-    if (!ow_reset()) return 0x7FFF;   // нет датчика
-
-    ow_write_byte(0xCC); // SKIP ROM
-    ow_write_byte(0x44); // CONVERT T
-
-    // Ждём, пока датчик закончит (он держит линию низкой)
-    while (!ow_read_bit());
-
-    if (!ow_reset()) return 0x7FFF;
-
-    ow_write_byte(0xCC); // SKIP ROM
-    ow_write_byte(0xBE); // READ SCRATCHPAD
-
-    uint8_t lo = ow_read_byte();
-    uint8_t hi = ow_read_byte();
-
-    return (hi << 8) | lo;
-}
 
 /* ================= MAIN ================= */
 
@@ -184,6 +93,7 @@ int main(void) {
     uart_init();
     i2c_init();
     mpu_init();
+    ds18b20_init();
 
  
 
@@ -191,7 +101,7 @@ int main(void) {
     uart_print("SMART COLLAR | USB-TTL | AVR\n");
 
     while (1) {
-        int16_t temp = ds18b20_read();
+        int16_t temp = ds18b20_read_raw();
         int16_t ax = mpu_read_word(0x3B);
         int16_t ay = mpu_read_word(0x3D);
         int16_t az = mpu_read_word(0x3F);
