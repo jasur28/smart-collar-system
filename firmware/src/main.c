@@ -111,13 +111,6 @@ uint8_t ow_reset(void) {
     return ok;
 }
 
-// void ow_write_bit(uint8_t b) {
-//     ow_low();
-//     if (b) _delay_us(6);
-//     else _delay_us(60);
-//     ow_release();
-//     _delay_us(10);
-// }
 void ow_write_bit(uint8_t b) {
     ow_low();
     if (b) {
@@ -132,15 +125,6 @@ void ow_write_bit(uint8_t b) {
 }
 
 
-// uint8_t ow_read_bit(void) {
-//     ow_low();
-//     _delay_us(6);
-//     ow_release();
-//     _delay_us(9);
-//     uint8_t b = (OW_PIN & (1<<OW_BIT)) != 0;
-//     _delay_us(55);
-//     return b;
-// }
 uint8_t ow_read_bit(void) {
     uint8_t bit;
 
@@ -163,14 +147,6 @@ void ow_write_byte(uint8_t b) {
     }
 }
 
-// uint8_t ow_read_byte(void) {
-//     uint8_t v = 0;
-//     for (uint8_t i=0;i<8;i++) {
-//         v >>= 1;
-//         if (ow_read_bit()) v |= 0x80;
-//     }
-//     return v;
-// }
 uint8_t ow_read_byte(void) {
     uint8_t v = 0;
     for (uint8_t i = 0; i < 8; i++) {
@@ -215,7 +191,6 @@ int main(void) {
     uart_print("SMART COLLAR | USB-TTL | AVR\n");
 
     while (1) {
-        
         int16_t temp = ds18b20_read();
         int16_t ax = mpu_read_word(0x3B);
         int16_t ay = mpu_read_word(0x3D);
