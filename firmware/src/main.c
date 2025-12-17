@@ -4,6 +4,7 @@
 #include <util/delay.h>
 #include <stdint.h>
 #include "drivers/sensors/ds18b20.h"
+#include "drivers/sensors/mpu6050.h"
 /* ================= UART (USB-TTL) ================= */
 
 void uart_init(void) {
@@ -37,62 +38,13 @@ void uart_print_int(int16_t v) {
     while (i--) uart_tx(buf[i]);
 }
 
-/* ================= I2C (MPU6050) ================= */
-
-void i2c_init(void) {
-    TWSR = 0x00;
-    TWBR = 72; // ~100kHz
-}
-
-void i2c_start(void) {
-    TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
-    while (!(TWCR & (1<<TWINT)));
-}
-
-void i2c_stop(void) {
-    TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
-}
-
-void i2c_write(uint8_t data) {
-    TWDR = data;
-    TWCR = (1<<TWINT)|(1<<TWEN);
-    while (!(TWCR & (1<<TWINT)));
-}
-
-uint8_t i2c_read_nack(void) {
-    TWCR = (1<<TWINT)|(1<<TWEN);
-    while (!(TWCR & (1<<TWINT)));
-    return TWDR;
-}
-
-int16_t mpu_read_word(uint8_t reg) {
-    i2c_start();
-    i2c_write(0xD0); // MPU write
-    i2c_write(reg);
-    i2c_start();
-    i2c_write(0xD1); // MPU read
-    uint8_t hi = i2c_read_nack();
-    uint8_t lo = i2c_read_nack();
-    i2c_stop();
-    return (hi << 8) | lo;
-}
-
-void mpu_init(void) {
-    i2c_start();
-    i2c_write(0xD0);
-    i2c_write(0x6B);
-    i2c_write(0x00); // wake up
-    i2c_stop();
-}
-
 
 
 /* ================= MAIN ================= */
 
 int main(void) {
     uart_init();
-    i2c_init();
-    mpu_init();
+    mpu6050_init();
     ds18b20_init();
 
  
@@ -102,9 +54,8 @@ int main(void) {
 
     while (1) {
         int16_t temp = ds18b20_read_raw();
-        int16_t ax = mpu_read_word(0x3B);
-        int16_t ay = mpu_read_word(0x3D);
-        int16_t az = mpu_read_word(0x3F);
+        int16_t ax, ay, az;
+        mpu6050_read_accel(&ax, &ay, &az);
 
         uart_print("T=");
         uart_print_int(temp / 16);
